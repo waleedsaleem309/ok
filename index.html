@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Live CMAF URL</title>
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+   <h1 id="liveCmafUrl"></h1>
+
+   <script>
+       const streamUrl = 'https://ok.ru/videoembed/6618535763481';
+
+       async function fetchLiveCmafUrl() {
+           try {
+               const response = await fetch(streamUrl, {
+                   headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 4.1.1; Galaxy Nexus Build/JRO03C) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19' }
+               });
+               const data = await response.text();
+
+               const dataOptionsRegex = /data-options="([^"]+)"/;
+               const matches = dataOptionsRegex.exec(data);
+               if (matches && matches.length >= 2) {
+                   return matches[1];
+               } else {
+                   throw new Error('No data-options attribute found in the HTML content');
+               }
+           } catch (error) {
+               console.error(`Failed to get liveCmafUrl: ${error.message}`);
+               return null;
+           }
+       }
+
+       async function displayLiveCmafUrl() {
+           const liveCmafUrl = await fetchLiveCmafUrl();
+
+           if (liveCmafUrl) {
+               const { window } = new JSDOM(`<!DOCTYPE html><body>${liveCmafUrl}`);
+               const dom = window.document;
+               const donText = dom.body.textContent;
+               const jsonObject = JSON.parse(donText);
+               const flashvars = jsonObject.flashvars;
+               const metadata = JSON.parse(flashvars.metadata);
+               const liveCmafUrl2 = metadata.liveCmafUrl;
+               const status = metadata.movie.status;
+               console.log(status);
+               console.log(liveCmafUrl2);
+               document.getElementById('liveCmafUrl').innerText = liveCmafUrl2;
+           } else {
+               document.getElementById('liveCmafUrl').innerText = 'Source is not live or encountered an error';
+           }
+       }
+
+       $(document).ready(function () {
+           displayLiveCmafUrl();
+       });
+   </script>
+</body>
+</html>
